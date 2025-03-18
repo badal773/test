@@ -1,7 +1,7 @@
 ################################# Build Container ###############################
 
 # Base Image for Build Container
-FROM maven:3.9.9-amazoncorretto-23-debian  as base
+FROM maven:3.9.9-amazoncorretto-21-debian  as base
 
 # Moving into working directory
 WORKDIR /build
@@ -21,7 +21,7 @@ RUN mvn clean package
 ################################# Prod Container #################################
 
 # Base Image for Prod Container
-FROM openjdk:24-jdk-slim
+FROM openjdk:21-jdk-slim
 
 # Exposing Port of this new container
 EXPOSE 8080
