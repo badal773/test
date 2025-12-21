@@ -1,0 +1,51 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build from'
+        required: false
+        default: 'master'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.branch || 'master' }}
+    
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract short SHA
+      id: vars
+      run: echo "short_sha=$(echo ${{ github.sha }} | cut -c1-5)" >> $GITHUB_OUTPUT
+    
+    - name: Get build date
+      id: date
+      run: echo "build_date=$(date -u +'%d%m%y')" >> $GITHUB_OUTPUT
+    
+    - name: Build and push Docker image
+      run: |
+        docker build . \
+          --platform linux/amd64 \
+          -t ghcr.io/${{ github.repository_owner }}/drify:${{ steps.vars.outputs.short_sha }} \
+          -t ghcr.io/${{ github.repository_owner }}/drify:latest \
+          --label "org.opencontainers.image.created=${{ steps.date.outputs.build_date }}" \
+          --label "org.opencontainers.image.revision=${{ github.sha }}" \
+          --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}"
+        
+        docker push ghcr.io/${{ github.repository_owner }}/drify:${{ steps.vars.outputs.short_sha }}
+        docker push ghcr.io/${{ github.repository_owner }}/drify:latest
